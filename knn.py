@@ -1,26 +1,30 @@
 from dataProcessing import getTrainingSetandLabels
 from sklearn.model_selection import GridSearchCV, train_test_split, cross_validate, RepeatedStratifiedKFold
-from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
 
 X_skaters, y_skaters = getTrainingSetandLabels()
 X_train, X_test, y_train, y_test = train_test_split(X_skaters, y_skaters, test_size=0.2)
 
+# Scaling data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
 # Train without hyperparameter tuning
-# rf = RandomForestClassifier(class_weight="balanced")
-# rf.fit(X_train, y_train)
+# knn = KNeighborsClassifier()
+# knn.fit(X_train, y_train)
 
 # Hyperparameter tuning with 5-fold cross-validation
 param_grid = {
-    "n_estimators": [50, 100, 200],
-    "max_depth": [None, 10, 20],
-    "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4],
-    "max_features": ["sqrt", "log2", None]
+    "n_neighbors": [3, 5, 7, 9],
+    "weights": ["uniform", "distance"],
+    "p": [1, 2]
 }
 gridSearch = GridSearchCV(
-    estimator=RandomForestClassifier(),
+    estimator=KNeighborsClassifier(),
     param_grid=param_grid,
     scoring="f1",
     cv=5,
@@ -29,19 +33,16 @@ gridSearch = GridSearchCV(
 )
 
 gridSearch.fit(X_train, y_train)
-bestRandomForestModel = gridSearch.best_estimator_    # Model with tuned hyperparameters
+bestKnnModel = gridSearch.best_estimator_    # Model with tuned hyperparameters
 print(f"Best Hyperparameters: {gridSearch.best_params_}")
 
 # Results without k-fold
-# y_pred = rf.predict(X_test)
-# print(f"Accuracy: {accuracy_score(y_test, y_pred)}")
+# y_pred = knn.predict(X_test)
+# print("Accuracy:", accuracy_score(y_test, y_pred))
 # print(f"confusion matrix: {confusion_matrix(y_test, y_pred)}")
 # print(f"Recall: {recall_score(y_test, y_pred, zero_division=0)}")
 # print(f"Precision: {precision_score(y_test, y_pred, zero_division=0)}")
 # print(f"F1 Score: {f1_score(y_test, y_pred, zero_division=0)}")
-# print(f"Classification Report:\n")
-# print(classification_report(y_test, y_pred))
-
 
 # k-fold cross-validation results
 scoring = {
@@ -51,7 +52,7 @@ scoring = {
     "f1": make_scorer(f1_score, zero_division=0),
 }
 cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-crossValidatationResults = cross_validate(bestRandomForestModel, X_skaters, y_skaters, cv=cv, scoring=scoring)
+crossValidatationResults = cross_validate(bestKnnModel, X_skaters, y_skaters, cv=cv, scoring=scoring)
 
 print(f"Accuracy scores: {crossValidatationResults["test_accuracy"]}")
 print(f"Mean accuracy score: {np.mean(crossValidatationResults["test_accuracy"])} +- {np.std(crossValidatationResults["test_accuracy"])}")
