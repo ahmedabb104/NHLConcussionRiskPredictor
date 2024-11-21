@@ -1,8 +1,12 @@
 import pandas as pd
 import unidecode
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.pipeline import Pipeline
+from collections import Counter    # For debugging purposes
 
-# Count number of concussions sustained in a season (first try with each season independently). Also count total games missed per season.
+# Count number of concussions sustained in a season. Also count total games missed per season.
 def cleanConcussionData(df):
     df = df.groupby(
         ["Season", "Player"], as_index=False).agg(
@@ -108,7 +112,7 @@ def removeMulticollinearity(df):
     return df, vif_data
 
 
-def main():
+def getTrainingSetandLabels():
     # Dataset containing only NHL players that sustained concussions 2012-2023
     nhl_concussions = pd.read_csv("data/concussionPlayers/dataset/NHL Concussions Database_data.csv")
     nhl_concussions = nhl_concussions.loc[0:, 'Season':'Games Missed']
@@ -143,9 +147,21 @@ def main():
                             "I_F_highDangerGoals", "I_F_dZoneGiveaways", "I_F_xGoalsFromActualReboundsOfShots", 
                             "faceoffsWon", "penalityMinutesDrawn", "shotsBlockedByPlayer", "OnIce_A_reboundGoals",
                             "xGoalsForAfterShifts", "xGoalsAgainstAfterShifts", "Games Missed", "Number of Concussions"]].values    # Training samples
-    y_skaters = nhl_skaters["Concussion next-season"].values    # Target feature    
+    y_skaters = nhl_skaters["Concussion next-season"].values    # Target feature
+
+    # Fixing imbalanced dataset with SMOTE and random undersampling
+    # Minority will have 10% of num of examples of majority first, then majority will have 50% of the num of examples of minority
+    overSample = SMOTE(sampling_strategy=0.1)
+    underSample = RandomUnderSampler(sampling_strategy=0.5)
+    steps = [('o', overSample), ('u', underSample)]
+    pipeline = Pipeline(steps=steps)
+    X_skaters, y_skaters = pipeline.fit_resample(X_skaters, y_skaters)
 
     return X_skaters, y_skaters
+
+
+def main():
+    X_skaters, y_skaters = getTrainingSetandLabels()
 
 
 if __name__=='__main__':
