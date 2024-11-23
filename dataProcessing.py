@@ -151,8 +151,8 @@ def getTrainingSetandLabels():
 
     # Fixing imbalanced dataset with SMOTE and random undersampling
     # Minority will have 10% of num of examples of majority first, then majority will have 50% of the num of examples of minority
-    overSample = SMOTE(sampling_strategy=0.1)
-    underSample = RandomUnderSampler(sampling_strategy=0.5)
+    overSample = SMOTE(sampling_strategy=0.1, random_state=42)
+    underSample = RandomUnderSampler(sampling_strategy=0.5, random_state=42)
     steps = [('o', overSample), ('u', underSample)]
     pipeline = Pipeline(steps=steps)
     X_skaters, y_skaters = pipeline.fit_resample(X_skaters, y_skaters)
