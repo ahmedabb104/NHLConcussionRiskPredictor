@@ -1,3 +1,3 @@
 # NHL Player Concussion Predictions
 
-Research paper is in the **docs** folder.
+Research paper is located at **docs/report.pdf**
